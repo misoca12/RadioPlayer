@@ -28,18 +28,30 @@ class MainActivity : AppCompatActivity(), RadioService.PlayerStateChangedListene
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         btnPlay.setOnClickListener {
-            binder?.playStart("<URL>")
+            val intent = Intent(this, RadioService::class.java).apply {
+                action = RadioService.ACTION_PLAY_RADIO
+                putExtra(RadioService.EXTRA_RADIO_URL, "https://nhkradioikr1-i.akamaihd.net/hls/live/512098/1-r1/1-r1-01.m3u8")
+            }
+            startService(intent)
         }
         btnStop.setOnClickListener {
-            binder?.stop()
+            val intent = Intent(this, RadioService::class.java).apply {
+                action = RadioService.ACTION_STOP_RADIO
+            }
+            startService(intent)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
         bindService(Intent(this, RadioService::class.java), conn, Context.BIND_AUTO_CREATE)
     }
 
-    override fun onDestroy() {
+    override fun onPause() {
         unbindService(conn)
-        super.onDestroy()
+        super.onPause()
     }
 
     private fun setPlayStatus(play: Boolean?) {

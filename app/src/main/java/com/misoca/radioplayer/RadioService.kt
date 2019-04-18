@@ -20,6 +20,9 @@ class RadioService : Service(), Player.EventListener {
 
     companion object {
         const val UA = "ua"
+        const val ACTION_PLAY_RADIO = "ACTION_PLAY_RADIO"
+        const val ACTION_STOP_RADIO = "ACTION_STOP_RADIO"
+        const val EXTRA_RADIO_URL = "EXTRA_RADIO_URL"
     }
 
     interface PlayerStateChangedListener {
@@ -27,13 +30,6 @@ class RadioService : Service(), Player.EventListener {
     }
 
     inner class RadioBinder : Binder() {
-        fun playStart(url: String) {
-            val uri = Uri.parse(url)
-            val dataSourceFactory = DefaultDataSourceFactory(this@RadioService, UA)
-            val audioSource = HlsMediaSource.Factory(dataSourceFactory).createMediaSource(uri)
-            player.prepare(audioSource)
-        }
-        fun stop() { player.stop() }
         fun isPlaying() = player.playbackState == PlaybackState.STATE_PLAYING
         fun setListener(listener: PlayerStateChangedListener) {
             playerStateChangedListener = listener
@@ -46,8 +42,22 @@ class RadioService : Service(), Player.EventListener {
         player.addListener(this)
     }
 
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val action = intent?.action
+        when (action) {
+            ACTION_PLAY_RADIO -> {
+                val url = intent.getStringExtra(EXTRA_RADIO_URL)
+                playStart(url)
+            }
+            ACTION_STOP_RADIO -> {
+                player.stop()
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun onDestroy() {
-        player.stop()
         super.onDestroy()
     }
 
@@ -63,4 +73,12 @@ class RadioService : Service(), Player.EventListener {
     override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
         playerStateChangedListener?.onPlayerStateChanged(playbackState)
     }
+
+    fun playStart(url: String) {
+        val uri = Uri.parse(url)
+        val dataSourceFactory = DefaultDataSourceFactory(this@RadioService, UA)
+        val audioSource = HlsMediaSource.Factory(dataSourceFactory).createMediaSource(uri)
+        player.prepare(audioSource)
+    }
+
 }
